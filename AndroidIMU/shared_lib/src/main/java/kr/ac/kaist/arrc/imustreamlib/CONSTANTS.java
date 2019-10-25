@@ -10,14 +10,14 @@ public class CONSTANTS {
     // should put Phone(leg)'s hotspot ssid and passwd
     // ***IMPORTANT***CANNOT CHANGE ON APP
     public static boolean FORCE_WIFI = true;
-    public static String SSID = "nerf-this";
-    public static String PASSWD = "dvasong1212";
+    public static String SSID = "UVRDemo";
+    public static String PASSWD = "kaistuvr";
 
 
     // target IP address
     // usually 192.168.43.1 is gateway(phone) IP for android hotspot
     // can change by sending broadcast message
-    public static String IP_ADDRESS = "192.168.0.8";
+    public static String IP_ADDRESS = "192.168.0.3";
 
     // each devices' IP address
     // DON'T NEED TO CHANGE (initialized by input packet)
