@@ -9,6 +9,8 @@ import struct
 import time
 import pickle
 import os
+import csv
+import matplotlib.pyplot as plt
 
 from datetime import datetime
 
@@ -39,7 +41,14 @@ class imus_UDP(threading.Thread):
         self.file_prefix = self.saving_folder+datetime.now().strftime('%Y-%m-%d %H_%M_%S')+"_"
         self.online_save_file = {}
         self.save_online = True
-        
+
+        # offline test vars
+        self.offline_file = {}
+        self.offline_data = {}
+        self.offline_numData = 1
+        self.offline_w_size = 256
+        self.fft_temp = {}
+        self.fft_freq = {}
         
         self.INPUT_EVENT_TYPE = -1
         self.POSE = 0
@@ -105,7 +114,7 @@ class imus_UDP(threading.Thread):
             self.serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.serverSocket.bind((self.IP, self.Port))
-            
+
     def resetDATAs(self, new_id=None):
         if new_id != None:
             print("ADD new data incoming: ", new_id)
@@ -213,9 +222,7 @@ class imus_UDP(threading.Thread):
                             self.resetDATAs(address[0])
                             self.rollData(self.datas[address[0]],self.numData,float_arr)
                     
-    
-                    
-                    
+
                 except socket.error as e:
                     print("Socket Error: %s"%e)
                     if self.STOP_loop:
@@ -239,40 +246,75 @@ class imus_UDP(threading.Thread):
     def Disconnect(self):
         self.serverSocket.close()
         print("imus_UDP Socket closed")
+
+
+    def readFile(self):
+        with open('offline_data.csv', 'r') as csvfile:
+        # csv file should not be in utf-8
+            reader = csv.reader(csvfile)
+            for row in reader:
+                float_list = [float(i) for i in row]
+                # print (float_list)
+                float_arr = np.array(float_list)
+                try:
+                    self.offline_data[:-1, :] = self.offline_data[1:, :]
+                    self.offline_data[-1, :self.offline_numData + 1] = float_arr
+                except:
+                    self.offline_data = np.empty((self.offline_w_size, self.offline_numData))
+                    self.offline_data[:-1, :] = self.offline_data[1:, :]
+                    self.offline_data[-1, :self.offline_numData + 1] = float_arr
+
+        #print (self.offline_data)
+
+    def runFFT(self):
+        # windowed_data = self.getDATA(w_size=300)
+        # windowed_data = self.offline_data
+        t = np.arange(256)
+        windowed_data = np.sin(t)
+        self.fft_data = np.fft.fft(windowed_data)
+        self.fft_freq = np.fft.fftfreq(self.offline_w_size)
+        plt.plot(self.fft_freq, self.fft_data.real, self.fft_freq, self.fft_data.imag)
+        #plt.plot(self.fft_freq, sp.real)
+        plt.show()
+
                                     
 if __name__ == "__main__":
+    
     imu_get = imus_UDP()
-    imu_get.setConnection()
-    imu_get.start()
-    
-    
+    # imu_get.setConnection()
+    # imu_get.start()
+    imu_get.readFile()
+    imu_get.runFFT()
+    freq = imu_get.fft_freq
+    data = imu_get.fft_data
+       
 #    imu_get.startCollecting()
     
-    dt = 1
+    dt = 0.1
     last_t = 0
-    while True:
-#        for one in imu_get.datas.keys():
-#            print(one, ": ", imu_get.datas[one][-1,:])
+#    while True:
+##        for one in imu_get.datas.keys():
+##            print(one, ": ", imu_get.datas[one][-1,:])
         
-        try:
-            data_chunk = imu_get.getDATA(w_size=500)
-        except:
-            print("none") 
+#        try:
+#            data_chunk = imu_get.getDATA(w_size=500)
+#        except:
+#            print("none")
             
-        if type(data_chunk) == dict:
-            for key, val in data_chunk.items():
-                count = np.count_nonzero(val[:,0]>last_t)
+#        if type(data_chunk) == dict:
+#            for key, val in data_chunk.items():
+#                count = np.count_nonzero(val[:,0]>last_t)
             
-                print("from:{} | {}sec count: {}".format(key, dt, count))
+#                print("from:{} | {}sec count: {}".format(key, dt, count))
             
-            one_row = imu_get.getLastData()
-            last_t = one_row[0]
+ #           one_row = imu_get.getLastData()
+ #           last_t = one_row[0]
         
-        time.sleep(dt)
+ #       time.sleep(dt)
         
-    imu_get.stopCollecting()
-    data = imu_get.getDATA()
+#    imu_get.stopCollecting()
+#    data = imu_get.getDATA()
     
-    imu_get.close()
+#    imu_get.close()
 
 
