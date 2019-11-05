@@ -45,10 +45,12 @@ class imus_UDP(threading.Thread):
         # offline test vars
         self.offline_file = {}
         self.offline_data = {}
-        self.offline_numData = 1
-        self.offline_w_size = 256
-        self.fft_temp = {}
+        self.offline_numData = 12
+        self.offline_numValidData = 7
+        self.offline_w_size = 100
+        self.fft_result = {}
         self.fft_freq = {}
+        self.column_title = ["Gx", "Gy", "Gz", "Ax", "Ay", "Az"]
         
         self.INPUT_EVENT_TYPE = -1
         self.POSE = 0
@@ -248,8 +250,9 @@ class imus_UDP(threading.Thread):
         print("imus_UDP Socket closed")
 
 
+    # for testing on offline_data
     def readFile(self):
-        with open('offline_data.csv', 'r') as csvfile:
+        with open('offline_data_cut.csv', 'r') as csvfile:
         # csv file should not be in utf-8
             reader = csv.reader(csvfile)
             for row in reader:
@@ -266,17 +269,27 @@ class imus_UDP(threading.Thread):
 
         #print (self.offline_data)
 
-    def runFFT(self):
+    def runOfflineFFT(self):
         # windowed_data = self.getDATA(w_size=300)
-        # windowed_data = self.offline_data
-        t = np.arange(256)
-        windowed_data = np.sin(t)
-        self.fft_data = np.fft.fft(windowed_data)
-        self.fft_freq = np.fft.fftfreq(self.offline_w_size)
-        plt.plot(self.fft_freq, self.fft_data.real, self.fft_freq, self.fft_data.imag)
-        #plt.plot(self.fft_freq, sp.real)
-        plt.show()
-
+        time_data = self.offline_data[:, 0]
+        windowed_data = self.offline_data[:, 1:self.offline_numValidData]
+        d = (time_data[-1] - time_data[0])/self.offline_w_size
+        self.fft_freq = np.fft.fftfreq(self.offline_w_size, d/1000)
+        
+        for i in range(0, self.offline_numValidData-1):
+            column = windowed_data[:, i]
+            mean = np.mean(column)
+            f_input = column - mean
+            f_result = np.fft.fft(f_input)
+            f_mag = np.abs(f_result)
+            #self.fft_result[:, i] = f_mag
+            fig, (p1, p2) = plt.subplots(1, 2)
+            fig.suptitle(self.column_title[i])
+            p1.plot(time_data, column)
+            p2.plot(self.fft_freq[0:int(self.offline_w_size/2)], f_mag[0:int(self.offline_w_size/2)])
+            plt.show()
+        
+            
                                     
 if __name__ == "__main__":
     
@@ -284,9 +297,7 @@ if __name__ == "__main__":
     # imu_get.setConnection()
     # imu_get.start()
     imu_get.readFile()
-    imu_get.runFFT()
-    freq = imu_get.fft_freq
-    data = imu_get.fft_data
+    imu_get.runOfflineFFT()
        
 #    imu_get.startCollecting()
     
