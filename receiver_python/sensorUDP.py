@@ -276,6 +276,9 @@ class imus_UDP(threading.Thread):
         d = (time_data[-1] - time_data[0])/self.offline_w_size
         self.fft_freq = np.fft.fftfreq(self.offline_w_size, d/1000)
         
+        fig, axs = plt.subplots(2, 6, figsize=(30,10))
+        fig.suptitle('Pinch 01')
+        
         for i in range(0, self.offline_numValidData-1):
             column = windowed_data[:, i]
             mean = np.mean(column)
@@ -283,11 +286,14 @@ class imus_UDP(threading.Thread):
             f_result = np.fft.fft(f_input)
             f_mag = np.abs(f_result)
             #self.fft_result[:, i] = f_mag
-            fig, (p1, p2) = plt.subplots(1, 2)
-            fig.suptitle(self.column_title[i])
-            p1.plot(time_data, column)
-            p2.plot(self.fft_freq[0:int(self.offline_w_size/2)], f_mag[0:int(self.offline_w_size/2)])
-            plt.show()
+            axs[0, i].plot(time_data, f_input)
+            axs[0, i].set_title(self.column_title[i])
+            axs[1, i].plot(self.fft_freq[0:int(self.offline_w_size/2)], f_mag[0:int(self.offline_w_size/2)])
+            
+        axs[0, 0].set(ylabel='Signal')
+        axs[1, 0].set(ylabel='FFT')
+            
+        plt.show()
         
             
                                     
