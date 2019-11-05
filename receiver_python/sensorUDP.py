@@ -286,6 +286,14 @@ class imus_UDP(threading.Thread):
             f_result = np.fft.fft(f_input)
             f_mag = np.abs(f_result)
             #self.fft_result[:, i] = f_mag
+            
+            if i < 3:
+                axs[0, i].set_ylim(-5, 5)
+                axs[1, i].set_ylim(-1, 5)
+            else:
+                axs[0, i].set_ylim(-12, 12)
+                axs[1, i].set_ylim(-1, 15)
+            
             axs[0, i].plot(time_data, f_input)
             axs[0, i].set_title(self.column_title[i])
             axs[1, i].plot(self.fft_freq[0:int(self.offline_w_size/2)], f_mag[0:int(self.offline_w_size/2)])
